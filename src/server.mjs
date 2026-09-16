@@ -1,4 +1,4 @@
-﻿/**
+/**
  * Zero-dependency HTTP server.
  *
  * Endpoints
@@ -812,15 +812,49 @@ export function createServer() {
   });
 }
 
-export function startServer({ port = Number(process.env.PORT ?? 8787), host = process.env.HOST ?? "127.0.0.1", maxPortTries = 12 } = {}) {
+/**
+ * Bind the HTTP server.
+ *
+ * Port shifting is OPT-IN (`allowPortShift`, or H3_ALLOW_PORT_SHIFT=1).
+ *
+ * Silent shifting was the default before, and it caused real confusion: if the
+ * configured port was already taken by an unrelated program, the service came up on
+ * the next free port while .env still said otherwise — so the documented URL, the
+ * NewAPI channel config and the actual listener all disagreed, with no visible error.
+ *
+ * Default behaviour is now to FAIL loudly. Failing is better than serving on a port
+ * nobody is looking at. `portShifted` is always reported so a caller can be explicit.
+ */
+export function startServer({
+  port = Number(process.env.PORT ?? 8787),
+  host = process.env.HOST ?? "127.0.0.1",
+  maxPortTries = 20,
+  allowPortShift = process.env.H3_ALLOW_PORT_SHIFT === "1",
+} = {}) {
   return new Promise((resolve, reject) => {
     const server = createServer();
     let attempt = 0;
+    let boundPort = port;
 
     const onError = (err) => {
-      if (err.code === "EADDRINUSE" && attempt < maxPortTries) {
-        attempt += 1;
-        server.listen(port + attempt, host);
+      if (err.code === "EADDRINUSE") {
+        if (allowPortShift && attempt < maxPortTries) {
+          attempt += 1;
+          boundPort = port + attempt;
+          server.listen(boundPort, host);
+          return;
+        }
+        reject(
+          new Error(
+            `端口 ${boundPort} 已被占用。\n` +
+              `  服务没有换端口启动，因为那样会让 .env 里的 PORT 与实际监听不一致，\n` +
+              `  导致文档、NewAPI 渠道配置全部对不上。\n` +
+              `  请任选其一：\n` +
+              `    - 改 .env 里的 PORT 换一个空闲端口；\n` +
+              `    - 关掉占用该端口的程序；\n` +
+              `    - 临时允许顺延：设 H3_ALLOW_PORT_SHIFT=1（会打印实际端口，但配置就不再准确）。`,
+          ),
+        );
         return;
       }
       reject(err);
@@ -830,7 +864,14 @@ export function startServer({ port = Number(process.env.PORT ?? 8787), host = pr
     server.on("listening", () => {
       server.off("error", onError);
       const address = server.address();
-      resolve({ server, port: address.port, host: address.address, url: `http://${host}:${address.port}` });
+      resolve({
+        server,
+        port: address.port,
+        host: address.address,
+        url: `http://${host}:${address.port}`,
+        requestedPort: port,
+        portShifted: address.port !== port,
+      });
     });
     server.listen(port, host);
   });
@@ -840,7 +881,18 @@ const invokedDirectly =
   process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url);
 
 if (invokedDirectly) {
-  const { url, host: boundHost } = await startServer();
+  let started;
+  try {
+    started = await startServer();
+  } catch (err) {
+    console.error("");
+    console.error("  启动失败：");
+    console.error("  " + String(err.message).split("\n").join("\n  "));
+    console.error("");
+    process.exit(1);
+  }
+
+  const { url, host: boundHost, port: boundPort, requestedPort, portShifted } = started;
   const config = loadConfig();
   loadSkill(); // fail fast if the official skill files are missing
   const keyState =
@@ -848,6 +900,10 @@ if (invokedDirectly) {
   console.log("");
   console.log("  H3 分镜提示词智能体已启动");
   console.log("  ----------------------------------------");
+  if (portShifted) {
+    console.log(`  ⚠ 端口顺延：请求 ${requestedPort}，实际监听 ${boundPort}`);
+    console.log(`     .env 里的 PORT 与实际不一致，NewAPI 请用 ${boundPort}，或改回一致后重启。`);
+  }
   console.log(`  网页界面:  ${url}`);
   console.log(`  兼容接口:  ${url}/v1   模型名: ${config.publicModelId}`);
   console.log(`  提供方:    ${config.provider} (${config.providerLabel})`);

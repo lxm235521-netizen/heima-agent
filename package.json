@@ -10,7 +10,7 @@
   "scripts": {
     "start": "node src/server.mjs",
     "dev": "node --watch src/server.mjs",
-    "test": "node --import ./test/setup.mjs --test test/skill.test.mjs test/unit.test.mjs test/config.test.mjs test/llm.test.mjs test/models.test.mjs test/auth.test.mjs test/network.test.mjs test/e2e.test.mjs test/openai.test.mjs",
+    "test": "node --import ./test/setup.mjs --test test/skill.test.mjs test/unit.test.mjs test/config.test.mjs test/port.test.mjs test/llm.test.mjs test/models.test.mjs test/auth.test.mjs test/network.test.mjs test/e2e.test.mjs test/openai.test.mjs",
     "set-password": "node scripts/set-web-password.mjs",
     "smoke": "node scripts/smoke.mjs",
     "sync:skill": "node scripts/sync-h3-skill.mjs"

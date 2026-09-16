@@ -1,4 +1,4 @@
-# 调用 h3-prompt-writing
+﻿# 调用 h3-prompt-writing
 
 对外接口是标准 OpenAI 协议，**任何 OpenAI SDK / Postman / NewAPI 都能直接调**。
 
@@ -6,7 +6,7 @@
 
 | 变量 | 取哪来 |
 |---|---|
-| `baseUrl` | 本机 `http://127.0.0.1:8787`；服务器换成 `http://<公网IP>:8787` 或 `https://你的域名` |
+| `baseUrl` | 本机 `http://127.0.0.1:8788`；服务器换成 `http://<公网IP>:8788` 或 `https://你的域名` |
 | `apiKey` | `.env` / `.env.local` 里的 **`H3_SERVER_API_KEY`**（不是上游那个 Key） |
 
 > 端点是 `{baseUrl}/v1/chat/completions`。注意 `/v1` 不能漏。
@@ -18,7 +18,7 @@
 ### 1. 基础：纯文本改写
 
 ```bash
-curl --location 'http://127.0.0.1:8787/v1/chat/completions' \
+curl --location 'http://127.0.0.1:8788/v1/chat/completions' \
 --header 'Authorization: Bearer sk-把你的入站Key填到这里' \
 --header 'Content-Type: application/json' \
 --data '{
@@ -34,7 +34,7 @@ curl --location 'http://127.0.0.1:8787/v1/chat/completions' \
 ### 2. 带图片（多模态，标准 OpenAI 写法）
 
 ```bash
-curl --location 'http://127.0.0.1:8787/v1/chat/completions' \
+curl --location 'http://127.0.0.1:8788/v1/chat/completions' \
 --header 'Authorization: Bearer sk-把你的入站Key填到这里' \
 --header 'Content-Type: application/json' \
 --data '{
@@ -61,7 +61,7 @@ curl --location 'http://127.0.0.1:8787/v1/chat/completions' \
 ### 3. 流式
 
 ```bash
-curl --location 'http://127.0.0.1:8787/v1/chat/completions' \
+curl --location 'http://127.0.0.1:8788/v1/chat/completions' \
 --header 'Authorization: Bearer sk-把你的入站Key填到这里' \
 --header 'Content-Type: application/json' \
 --data '{
@@ -122,10 +122,10 @@ curl --location 'http://127.0.0.1:8787/v1/chat/completions' \
 ### 6. 模型列表 / 健康检查
 
 ```bash
-curl --location 'http://127.0.0.1:8787/v1/models' \
+curl --location 'http://127.0.0.1:8788/v1/models' \
 --header 'Authorization: Bearer sk-把你的入站Key填到这里'
 
-curl --location 'http://127.0.0.1:8787/api/health'   # 无需鉴权，供健康检查用
+curl --location 'http://127.0.0.1:8788/api/health'   # 无需鉴权，供健康检查用
 ```
 
 ### 7. 图像生成节点形态
@@ -133,7 +133,7 @@ curl --location 'http://127.0.0.1:8787/api/health'   # 无需鉴权，供健康�
 便于接进已有的出图工作流（返回的是**提示词文本**的 base64，不是真实图片）：
 
 ```bash
-curl --location 'http://127.0.0.1:8787/v1/images/generations' \
+curl --location 'http://127.0.0.1:8788/v1/images/generations' \
 --header 'Authorization: Bearer sk-把你的入站Key填到这里' \
 --header 'Content-Type: application/json' \
 --data '{ "model": "h3-prompt-writing", "prompt": "深夜的旧仓库，老陈推开锈迹斑斑的铁门。", "size": "1024x1024" }'
@@ -149,7 +149,7 @@ curl --location 'http://127.0.0.1:8787/v1/images/generations' \
 
 | 变量 | 改成 |
 |---|---|
-| `baseUrl` | `http://127.0.0.1:8787` 或你的服务器地址 |
+| `baseUrl` | `http://127.0.0.1:8788` 或你的服务器地址 |
 | `apiKey` | 你的 `H3_SERVER_API_KEY` |
 
 集合还内置了一个 `imageDataUrl` 变量（一张 512×288 的示例图），所以「带图片」那条**开箱即可发送**，不需要你准备图。

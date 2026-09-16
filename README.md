@@ -1,4 +1,4 @@
-# H3 分镜提示词智能体
+﻿# H3 分镜提示词智能体
 
 把**小说片段 / 分镜片段 + 参考图**，用 MiniMax H3 **官方 skill** 转成专业、可直接粘贴使用的 H3 分镜提示词。
 
@@ -47,7 +47,7 @@ copy .env.example .env      # 然后按下面说明填 .env
 docker compose up -d
 ```
 
-打开 `http://127.0.0.1:8787`。`.env` 最少要填这三项：
+打开 `http://127.0.0.1:8788`。`.env` 最少要填这三项：
 
 ```ini
 # 对外：保护 /v1/* 接口，别人拿到这个 Key 才能调用你的 agent
@@ -77,7 +77,7 @@ setx NEWAPI_API_KEY sk-xxxx
 node src/server.mjs
 ```
 
-打开 `http://127.0.0.1:8787` 即可。
+打开 `http://127.0.0.1:8788` 即可。
 
 > **注意**：本机 PowerShell 执行策略禁用了 `npm.ps1`，所以请直接用 `node` 命令（`npm test` 会报 `running scripts is disabled`）。
 > 端口被占用时会自动向后顺延（最多 12 个），启动日志会打印实际地址。
@@ -151,7 +151,7 @@ LLM_MODEL=你在NewAPI里真实可用的、支持图片的模型名
 | 字段 | 填什么 |
 |---|---|
 | 类型 | OpenAI（或"自定义渠道"，只要走 `/v1/chat/completions`） |
-| Base URL | `http://heima-agent:8787/v1`（容器间用服务名；本机用 `http://host.docker.internal:8787/v1`） |
+| Base URL | `http://heima-agent:8788/v1`（容器间用服务名；本机用 `http://host.docker.internal:8788/v1`） |
 | API Key | 你设置的 `H3_SERVER_API_KEY` |
 | 模型 | `h3-prompt-writing`（或你自定义的 `H3_MODEL_ID`） |
 
@@ -160,7 +160,7 @@ LLM_MODEL=你在NewAPI里真实可用的、支持图片的模型名
 **调用示例**
 
 ```bash
-curl http://127.0.0.1:8787/v1/chat/completions \
+curl http://127.0.0.1:8788/v1/chat/completions \
   -H "Authorization: Bearer $H3_SERVER_API_KEY" \
   -H "Content-Type: application/json" \
   -d '{"model":"h3-prompt-writing","messages":[{"role":"user","content":"深夜的旧仓库，老陈推开门，压低声音：东西还在。"}]}'
