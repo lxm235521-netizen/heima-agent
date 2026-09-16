@@ -1,0 +1,262 @@
+﻿<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>H3 分镜提示词智能体</title>
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🎬</text></svg>" />
+    <link rel="stylesheet" href="/app.css" />
+  </head>
+  <body>
+    <!-- Login gate. Visible by default and hidden once /api/session confirms a
+         session, so the page never renders blank while that check is in flight. -->
+    <div id="loginGate" class="logingate">
+      <!-- autocomplete="off" on the form: the browser's saved-credential autofill was
+           observed overwriting a programmatically set password right before submit.
+           data-build lets anyone confirm at a glance which revision the browser is
+           actually running — a cached older page was repeatedly mistaken for a bug. -->
+      <form id="loginForm" class="loginbox" autocomplete="off" data-build="auth-fix-4-diag">
+        <div class="loginbrand">
+          <span class="logo">🎬</span>
+          <h1>H3 分镜提示词智能体</h1>
+          <p class="hint">请登录后使用</p>
+        </div>
+
+        <label class="field">
+          <span class="label">用户名</span>
+          <input id="loginUser" name="username" type="text" autocomplete="username" />
+        </label>
+
+        <label class="field">
+          <span class="label">密码</span>
+          <input id="loginPass" name="password" type="password" autocomplete="current-password" />
+        </label>
+
+        <button id="loginSubmit" class="btn btn-primary login-submit" type="submit">登录</button>
+        <p id="loginError" class="login-error" hidden></p>
+
+        <!-- Visible diagnostics: when the page misbehaves on someone else's machine,
+             asking them to open DevTools is unreliable. One click copies the facts. -->
+        <details class="logindiag">
+          <summary>登录没反应？点这里复制诊断信息</summary>
+          <pre id="diagOut">收集中…</pre>
+          <button id="diagCopy" class="btn btn-ghost" type="button">复制诊断信息</button>
+        </details>
+
+        <p class="hint login-note">
+          会话保存在 HttpOnly Cookie 中，7 天后过期；重启服务会立即让所有会话失效。
+        </p>
+      </form>
+    </div>
+
+    <div id="app" hidden>
+    <div class="stickytop">
+      <header class="topbar">
+        <div class="brand">
+          <span class="logo">🎬</span>
+          <div>
+            <h1>H3 分镜提示词智能体</h1>
+            <p class="sub">小说片段 / 分镜片段 + 图片 → 专业 MiniMax H3 提示词</p>
+          </div>
+        </div>
+        <div class="topbar-right">
+          <div id="skillBadge" class="badge badge-muted" title="官方 skill 加载状态">skill 检测中…</div>
+          <div id="modelBadge" class="badge badge-muted" title="当前模型配置">模型检测中…</div>
+          <button id="openSettings" class="btn btn-ghost" type="button">模型设置</button>
+        </div>
+      </header>
+
+      <div class="modelbar">
+        <span class="modelbar-label">切换模型</span>
+        <div id="modelSwitch" class="model-switch" role="group" aria-label="快速切换模型">
+          <span class="hint">正在读取可用模型…</span>
+        </div>
+        <span id="modelLive" class="badge badge-muted" title="上游 /models 探测结果">检测中…</span>
+        <button id="refreshModels" class="btn btn-link" type="button">重新检测</button>
+      </div>
+    </div>
+
+    <main class="layout">
+      <!-- ------------------------------------------------ input column -->
+      <section class="panel">
+        <div class="panel-head">
+          <h2>1 · 输入素材</h2>
+          <button id="loadSample" class="btn btn-link" type="button">载入示例</button>
+        </div>
+
+        <label class="field">
+          <span class="label">小说片段 / 分镜片段</span>
+          <textarea
+            id="text"
+            rows="12"
+            placeholder="粘贴小说段落、剧本片段或分镜描述。可以写清出场人物、动作、台词、想要的镜头感。&#10;例如：（夜里，老陈推开锈迹斑斑的铁门，手电光扫过仓库。他压低声音）老陈：东西还在。"
+          ></textarea>
+          <span class="hint"><b id="charCount">0</b> 字 · 台词会原样保留，不会被翻译或改写</span>
+        </label>
+
+        <div class="field">
+          <span class="label">参考图片（可选，最多 9 张）</span>
+          <div id="dropzone" class="dropzone" tabindex="0" role="button">
+            <input id="fileInput" type="file" accept="image/png,image/jpeg,image/webp,image/gif" multiple hidden />
+            <p><strong>点击选择</strong> 或把图片拖进来</p>
+            <p class="hint">支持 PNG / JPEG / WebP / GIF，单张 ≤ 8MB</p>
+          </div>
+          <div id="thumbs" class="thumbs"></div>
+        </div>
+
+        <div class="grid2">
+          <label class="field">
+            <span class="label">单次时长</span>
+            <select id="duration">
+              <option value="" selected>自动判断</option>
+              <option value="5">5 秒</option>
+              <option value="6">6 秒</option>
+              <option value="8">8 秒</option>
+              <option value="10">10 秒</option>
+              <option value="15">15 秒（上限）</option>
+            </select>
+          </label>
+          <label class="field">
+            <span class="label">画幅</span>
+            <select id="ratio">
+              <option value="">自动判断</option>
+              <option value="16:9" selected>16:9 横屏</option>
+              <option value="9:16">9:16 竖屏</option>
+              <option value="1:1">1:1 方形</option>
+              <option value="4:3">4:3</option>
+              <option value="21:9">21:9 宽银幕</option>
+            </select>
+          </label>
+        </div>
+
+        <label class="field">
+          <span class="label">生成模式</span>
+          <select id="mode">
+            <option value="auto" selected>自动判定（推荐）</option>
+            <option value="T2VA">T2VA · 纯文本生成</option>
+            <option value="I2VA">I2VA · 首帧图生视频</option>
+            <option value="FL2VA">FL2VA · 首尾帧</option>
+            <option value="L2VA">L2VA · 尾帧收敛</option>
+            <option value="Ref2VA">Ref2VA · 全参考（形象/场景/风格/分镜图）</option>
+          </select>
+          <span class="hint">图只是形象或风格参考、或只是一张分镜草图时，请选 Ref2VA，不要选 I2VA。</span>
+        </label>
+
+        <label class="checkbox">
+          <input id="deepDive" type="checkbox" />
+          <span>深度模式：跳过独立规划，一次性完成分析+改写（更慢、更贵，结构自由度更高）</span>
+        </label>
+
+        <div class="actions">
+          <button id="generate" class="btn btn-primary" type="button">生成 H3 提示词</button>
+          <button id="cancel" class="btn btn-ghost" type="button" hidden>取消</button>
+        </div>
+        <p class="disclaimer">
+          仅用于把你的素材改写成提示词。上游模型与 H3 服务均带有内容审核，请确保素材合法、拥有相应权利。
+        </p>
+      </section>
+
+      <!-- ----------------------------------------------- output column -->
+      <section class="panel">
+        <div class="panel-head">
+          <h2>2 · H3 提示词</h2>
+          <div class="head-actions">
+            <button id="copyPrompt" class="btn btn-ghost" type="button" disabled>复制</button>
+            <button id="downloadPrompt" class="btn btn-ghost" type="button" disabled>.txt</button>
+          </div>
+        </div>
+
+        <div id="progress" class="progress" hidden>
+          <div class="progress-line"><span class="spinner"></span><span id="stageText">准备中…</span></div>
+          <ul id="eventLog" class="event-log"></ul>
+        </div>
+
+        <div class="tabs" id="tabs" hidden>
+          <button class="tab active" data-tab="prompt" type="button">提示词</button>
+          <button class="tab" data-tab="plan" type="button">分析</button>
+          <button class="tab" data-tab="json" type="button">原始 JSON</button>
+          <button class="tab" data-tab="check" type="button">校验 <span id="checkCount" class="pill">0</span></button>
+        </div>
+
+        <div id="tab-prompt" class="tabpane">
+          <div id="metaRow" class="meta-row" hidden></div>
+          <pre id="promptOut" class="output" data-empty="提示词会实时出现在这里…"></pre>
+          <div id="notes" class="notes" hidden></div>
+        </div>
+
+        <div id="tab-plan" class="tabpane" hidden>
+          <div id="planOut" class="plan-out" data-empty="模式判定与分析结果会显示在这里。"></div>
+        </div>
+
+        <div id="tab-json" class="tabpane" hidden>
+          <pre id="jsonOut" class="output output-raw" data-empty="原始 JSON 流…"></pre>
+        </div>
+
+        <div id="tab-check" class="tabpane" hidden>
+          <div id="checkOut" class="check-out" data-empty="校验结果会显示在这里。"></div>
+        </div>
+      </section>
+    </main>
+
+    <!-- ---------------------------------------------------- settings -->
+    <dialog id="settings" class="modal">
+      <form method="dialog" class="modal-body">
+        <h2>模型设置</h2>
+        <p class="hint">
+          需要多模态（能读图）模型。配置会写入 <code id="cfgPath">config.local.json</code>，Key 只保存在本机服务端，不会回传到浏览器。
+        </p>
+
+        <label class="field">
+          <span class="label">服务商预设</span>
+          <select id="cfgProvider"></select>
+          <span class="hint" id="cfgHint"></span>
+        </label>
+
+        <label class="field">
+          <span class="label">baseUrl（OpenAI 兼容）</span>
+          <input id="cfgBaseUrl" type="text" placeholder="https://api.example.com/v1" />
+        </label>
+
+        <label class="field">
+          <span class="label">生成模型</span>
+          <select id="cfgModelSelect"></select>
+          <input id="cfgModel" type="text" placeholder="或直接填写模型名（自定义）" list="modelList" />
+          <datalist id="modelList"></datalist>
+          <span class="hint" id="cfgModelHint"></span>
+        </label>
+
+        <label class="field">
+          <span class="label">规划模型（负责模式判定；留空 = 复用生成模型）</span>
+          <select id="cfgPlannerSelect">
+            <option value="">同生成模型（推荐）</option>
+          </select>
+          <span class="hint">模式判定决定图片是首帧还是参考，建议用读图能力强的模型。</span>
+        </label>
+
+        <label class="field">
+          <span class="label">API Key <span id="keyState" class="hint"></span></span>
+          <input id="cfgKey" type="password" placeholder="留空表示不修改已保存的 Key" autocomplete="off" />
+        </label>
+
+        <label class="field">
+          <span class="label">自动修复次数</span>
+          <select id="cfgRepairs">
+            <option value="0">0 次（快）</option>
+            <option value="1" selected>1 次（推荐）</option>
+            <option value="2">2 次（更稳）</option>
+          </select>
+        </label>
+
+        <div class="modal-actions">
+          <button id="saveSettings" class="btn btn-primary" type="button">保存</button>
+          <button class="btn btn-ghost" type="submit">关闭</button>
+        </div>
+        <p id="settingsStatus" class="hint"></p>
+      </form>
+    </dialog>
+
+    </div><!-- /#app -->
+
+    <script type="module" src="/app.js"></script>
+  </body>
+</html>

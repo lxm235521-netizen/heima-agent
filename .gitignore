@@ -1,0 +1,9 @@
+node_modules/
+config.local.json
+web/.__syntax_check.mjs
+*.log
+
+# Docker / local env
+.env
+.env.local
+chrome-profile/

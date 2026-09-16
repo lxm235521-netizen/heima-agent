@@ -1,0 +1,19 @@
+# Normalise line endings to LF in the repository.
+#
+# Two reasons this matters here:
+#   * the official H3 skill files are verified against sha256 hashes in
+#     skills/h3-prompt-writing/MANIFEST.json, so a CRLF rewrite would fail those checks;
+#   * the service is deployed to Linux containers, where stray CRLF can break
+#     shell scripts and the start of every file.
+#
+# `.ps1` stays CRLF because Windows PowerShell is the primary consumer.
+* text=auto eol=lf
+
+*.ps1 text eol=crlf
+
+# Binary assets must never be text-normalised.
+*.png binary
+*.ico binary
+*.gif binary
+*.jpg binary
+*.webp binary

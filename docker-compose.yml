@@ -1,0 +1,53 @@
+# docker compose up -d
+#
+# Two things are configurable here:
+#   1. Upstream compute  — point the agent at your NewAPI / provider (env below)
+#   2. Inbound auth      — H3_SERVER_API_KEY protects /v1/* so only your NewAPI
+#                          can spend the upstream quota
+services:
+  heima-agent:
+    build: .
+    image: heima-agent:latest
+    container_name: heima-agent
+    restart: unless-stopped
+
+    ports:
+      # host:container — keep it on 127.0.0.1 if NewAPI runs on this same host and
+      # you do not want the port exposed to your network.
+      - "8787:8787"
+
+    environment:
+      # ---------- inbound: protect the /v1/* surface ----------
+      # Leave empty ONLY when the port is not reachable by anyone else.
+      H3_SERVER_API_KEY: "${H3_SERVER_API_KEY:-}"
+      # The model id your NewAPI channel will use.
+      H3_MODEL_ID: "${H3_MODEL_ID:-h3-prompt-writing}"
+
+      # ---------- web console login ----------
+      # Required for the console to work at all: without it the server refuses to serve
+      # the console instead of exposing an unauthenticated config UI.
+      H3_WEB_USERNAME: "${H3_WEB_USERNAME:-admin}"
+      H3_WEB_PASSWORD: "${H3_WEB_PASSWORD:-}"
+
+      # ---------- upstream: where the LLM compute actually comes from ----------
+      # Example: a third-party NewAPI deployment. Keep the /v1 suffix.
+      H3_UPSTREAM_BASE_URL: "${H3_UPSTREAM_BASE_URL:-http://host.docker.internal:3000/v1}"
+      NEWAPI_API_KEY: "${NEWAPI_API_KEY:-}"
+      # Must be a model that accepts IMAGE input, or the picture workflows degrade.
+      LLM_MODEL: "${LLM_MODEL:-qwen-vl-max}"
+      LLM_PLANNER_MODEL: "${LLM_PLANNER_MODEL:-}"
+      LLM_TIMEOUT_MS: "${LLM_TIMEOUT_MS:-180000}"
+      LLM_REPAIR_PASSES: "${LLM_REPAIR_PASSES:-1}"
+
+    volumes:
+      # Persists provider/model settings saved from the web UI. The image itself
+      # stays untouched, so it can be replaced freely on upgrade.
+      - heima-agent-data:/data
+
+    # Reach a NewAPI running on the Docker host (Linux only; on Docker Desktop
+    # host.docker.internal already resolves).
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+
+volumes:
+  heima-agent-data:
