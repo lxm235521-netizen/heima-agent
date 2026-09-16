@@ -1,0 +1,290 @@
+{
+  "info": {
+    "_postman_id": "8f2c1a44-5d3e-4b21-9c77-h3promptwriting01",
+    "name": "H3 分镜提示词智能体",
+    "description": "调用 h3-prompt-writing 模型：把小说/分镜片段(+图片)改写成 MiniMax H3 官方规范的分镜提示词。\n\n开始前请在「环境」里设置两个变量：\n  baseUrl = http://127.0.0.1:8787   （部署到服务器后改成你的地址，例如 https://your-domain.com）\n  apiKey  = 你的 H3_SERVER_API_KEY（.env 里配的那个）\n\n注意：模型的 base URL 是 {baseUrl}/v1，但本集合已把 /v1 写进各请求路径。",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://127.0.0.1:8787",
+      "type": "string"
+    },
+    {
+      "key": "apiKey",
+      "value": "sk-把你的入站Key填到这里",
+      "type": "string"
+    },
+    {
+      "key": "model",
+      "value": "h3-prompt-writing",
+      "type": "string"
+    },
+    {
+      "key": "imageDataUrl",
+      "value": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAEgCAIAAABNXlwGAAAED0lEQVR4nO3VMQ0AMAzAsMIpfxSDNRg9YskA8mXeLgBBc14AwAkDAIgyAIAoAwCIMgCAKAMAiDIAgCgDAIgyAIAoAwCIMgCAKAMAiDIAgCgDAIgyAIAoAwCIMgCAKAMAiDIAgCgDAIgyAIAoAwCIMgCAKAMAiDIAgCgDAIgyAIAoAwCIMgCAKAMAiDIAgCgDAIgyAIAoAwCIMgCAKAMAiDIAgCgDAIgyAIAoAwCIMgCAKAMAiDIAgCgDAIgyAIAoAwCIMgCAKAMAiDIAgCgDAIgyAIAoAwCIMgCAKAMAiDIAgCgDAIgyAIAoAwCIMgCAKAMAiDIAgCgDAIgyAIAoAwCIMgCAKAMAiDIAgCgDAIgyAIAoAwCIMgCAKAMAiDIAgCgDAIgyAIAoAwCIMgCAKAMAiDIAgCgDAIgyAIAoAwCIMgCAKAMAiDIAgCgDAIgyAIAoAwCIMgCAKAMAiDIAgCgDAIgyAIAoAwCIMgCAKAMAiDIAgCgDAIgyAIAoAwCIMgCAKAMAiDIAgCgDAIgyAIAoAwCIMgCAKAMAiDIAgCgDAIgyAIAoAwCIMgCAKAMAiDIAgCgDAIgyAIAoAwCIMgCAKAMAiDIAgCgDAIgyAIAoAwCIMgCAKAMAiDIAgCgDAIgyAIAoAwCIMgCAKAMAiDIAgCgDAIgyAIAoAwCIMgCAKAMAiDIAgCgDAIgyAIAoAwCIMgCAKAMAiDIAgCgDAIgyAIAoAwCIMgCAKAMAiDIAgCgDAIgyAIAoAwCIMgCAKAMAiDIAgCgDAIgyAIAoAwCIMgCAKAMAiDIAgCgDAIgyAIAoAwCIMgCAKAMAiDIAgCgDAIgyAIAoAwCIMgCAKAMAiDIAgCgDAIgyAIAoAwCIMgCAKAMAiDIAgCgDAIgyAIAoAwCIMgCAKAMAiDIAgCgDAIgyAIAoAwCIMgCAKAMAiDIAgCgDAIgyAIAoAwCIMgCAKAMAiDIAgCgDAIgyAIAoAwCIMgCAKAMAiDIAgCgDAIgyAIAoAwCIMgCAKAMAiDIAgCgDAIgyAIAoAwCIMgCAKAMAiDIAgCgDAIgyAIAoAwCIMgCAKAMAiDIAgCgDAIgyAIAoAwCIMgCAKAMAiDIAgCgDAIgyAIAoAwCIMgCAKAMAiDIAgCgDAIgyAIAoAwCIMgCAKAMAiDIAgCgDAIgyAIAoAwCIMgCAKAMAiDIAgCgDAIgyAIAoAwCIMgCAKAMAiDIAgCgDAIgyAIAoAwCIMgCAKAMAiDIAgCgDAIgyAIAoAwCIMgCAKAMAiDIAgCgDAIgyAIAoAwCIMgCAKAMAiDIAgCgDAIgyAIAoAwCIMgCAKAMAiDIAgCgDAIgyAIAoAwCIMgCAKAMAiDIAgCgDAIgyAIAoAwCIMgCAqA+ooCTrzbP7/wAAAABJRU5ErkJggg==",
+      "type": "string"
+    }
+  ],
+  "item": [
+    {
+      "name": "01 模型列表",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{apiKey}}",
+            "type": "text"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/v1/models",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "v1",
+            "models"
+          ]
+        },
+        "description": "确认服务可达、Key 正确，并查看对外模型名。返回 401 说明 apiKey 填错了。"
+      }
+    },
+    {
+      "name": "02 改写提示词（纯文本）",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{apiKey}}",
+            "type": "text"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json",
+            "type": "text"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"model\": \"{{model}}\",\n  \"messages\": [\n    {\n      \"role\": \"user\",\n      \"content\": \"深夜的旧仓库。老陈推开锈迹斑斑的铁门，手电光柱扫过满地纸箱。他身后跟着十七岁的小满。\\n\\n老陈压低声音：东西还在。\\n小满紧张地咽了口唾沫：爸，外面有人。\"\n    }\n  ]\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        },
+        "url": {
+          "raw": "{{baseUrl}}/v1/chat/completions",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "v1",
+            "chat",
+            "completions"
+          ]
+        },
+        "description": "最常用的形式。返回内容 = 提示词正文 + 一段 HTML 注释形式的元信息尾部。\n台词会原样保留在 <d>[Chinese] ...</d> 里，不会翻译。"
+      }
+    },
+    {
+      "name": "03 改写提示词（带图片，首帧）",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{apiKey}}",
+            "type": "text"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json",
+            "type": "text"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"model\": \"{{model}}\",\n  \"messages\": [\n    {\n      \"role\": \"user\",\n      \"content\": [\n        {\n          \"type\": \"text\",\n          \"text\": \"把这张图作为目标视频的首帧，改写下面的素材：老陈推开仓库铁门，压低声音说：东西还在。\"\n        },\n        {\n          \"type\": \"image_url\",\n          \"image_url\": {\n            \"url\": \"{{imageDataUrl}}\"\n          }\n        }\n      ]\n    }\n  ]\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        },
+        "url": {
+          "raw": "{{baseUrl}}/v1/chat/completions",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "v1",
+            "chat",
+            "completions"
+          ]
+        },
+        "description": "多模态形式，标准 OpenAI 写法。image_url.url 必须是 data:image/...;base64,... 或可公开访问的 http(s) 地址。\n集合里 imageDataUrl 变量已内置一张 512x288 的示例图（纯色），可直接发；换成你自己的图即可。"
+      }
+    },
+    {
+      "name": "04 改写提示词（流式）",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{apiKey}}",
+            "type": "text"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json",
+            "type": "text"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"model\": \"{{model}}\",\n  \"stream\": true,\n  \"messages\": [\n    {\n      \"role\": \"user\",\n      \"content\": \"面包店开门，老陈把第一炉面包放上木柜台。\"\n    }\n  ]\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        },
+        "url": {
+          "raw": "{{baseUrl}}/v1/chat/completions",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "v1",
+            "chat",
+            "completions"
+          ]
+        },
+        "description": "SSE 流式返回。在 Postman 里会逐块显示；末尾有 finish_reason=stop 与 usage。"
+      }
+    },
+    {
+      "name": "05 强制模式 Ref2VA（参考图）",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{apiKey}}",
+            "type": "text"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json",
+            "type": "text"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"model\": \"{{model}}\",\n  \"messages\": [\n    {\n      \"role\": \"system\",\n      \"content\": \"请用 Ref2VA（全参考模式），因为这张图只是人物形象参考，不是首帧。\"\n    },\n    {\n      \"role\": \"user\",\n      \"content\": \"参考这张图里的人物形象，改写：老陈在仓库里打开手电。\"\n    }\n  ]\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        },
+        "url": {
+          "raw": "{{baseUrl}}/v1/chat/completions",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "v1",
+            "chat",
+            "completions"
+          ]
+        },
+        "description": "用 system 消息强制模式。可选值：T2VA / I2VA / FL2VA / L2VA / Ref2VA。\n也可在文本里写 mode:Ref2VA 或 --mode I2VA。不指定时由模型自动判定。\n为什么要手动指定：图是「首帧」还是「仅形象参考」决定用哪套规范，自动判定可能猜错。"
+      }
+    },
+    {
+      "name": "06 返回结构化 JSON",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{apiKey}}",
+            "type": "text"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json",
+            "type": "text"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"model\": \"{{model}}\",\n  \"messages\": [\n    {\n      \"role\": \"user\",\n      \"content\": \"深夜的旧仓库。老陈推开门。请返回 json 格式。\"\n    }\n  ]\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        },
+        "url": {
+          "raw": "{{baseUrl}}/v1/chat/completions",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "v1",
+            "chat",
+            "completions"
+          ]
+        },
+        "description": "在消息里加「返回 json 格式」，返回结构化 JSON：{mode, duration_sec, ratio, shot_count, prompt, notes_zh, validation}。\n适合程序化处理；纯文本形式更适合人读和复制。"
+      }
+    },
+    {
+      "name": "07 图像生成接口形态",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{apiKey}}",
+            "type": "text"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json",
+            "type": "text"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"model\": \"{{model}}\",\n  \"prompt\": \"深夜的旧仓库，老陈推开锈迹斑斑的铁门。\",\n  \"size\": \"1024x1024\"\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        },
+        "url": {
+          "raw": "{{baseUrl}}/v1/images/generations",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "v1",
+            "images",
+            "generations"
+          ]
+        },
+        "description": "以「文生图」节点的形状返回提示词（b64_json 内联），便于接进已有的出图工作流。\n注意：这里返回的是提示词文本的 base64，不是真实图片。"
+      }
+    }
+  ]
+}
